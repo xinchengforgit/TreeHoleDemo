@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-func initConfig() {
-	viper.SetConfigName("config")
-	viper.SetConfigFile("json")
+func InitConfig() {
+	viper.SetConfigName("config.json")
+	viper.SetConfigType("json")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
