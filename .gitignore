@@ -1,0 +1,7 @@
+go.mod
+go.sum
+Init_db.sql
+src/*_test.go
+logs.txt
+demo
+*.json
