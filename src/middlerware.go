@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +17,6 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 		tokenString = tokenString[7:]
-		log.Println(tokenString)
 		claims, err := ParseToken(tokenString)
 		if err != nil {
 			response = ErrorResponse(fmt.Sprintf("Invalid token"))

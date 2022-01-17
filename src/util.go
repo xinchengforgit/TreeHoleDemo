@@ -16,13 +16,9 @@ func HashStr(str string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+
 // func GenToken(uid int) (string, time.Time)
 // func VerifyToken()
-
-// 之后采用jwt鉴权认证
-// 如何保证洞主还是洞主呢???
-// 如果记录把
-// 数据库里面存一个userId
 type Claims struct {
 	Uid int `json:"uid"`
 	jwt.StandardClaims
@@ -31,7 +27,6 @@ type Claims struct {
 func GenToken(uid int) (string, time.Time, error) {
 	mySigningKey := []byte(JwtKey)
 	expireTime := time.Now().Add(time.Duration(ExpireTime) * time.Minute)
-
 	// Create the Claims
 	claims := Claims{
 		uid,
@@ -47,6 +42,7 @@ func GenToken(uid int) (string, time.Time, error) {
 	}
 	return ss, expireTime, nil
 }
+
 func ParseToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(JwtKey), nil

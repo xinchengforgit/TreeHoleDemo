@@ -6,8 +6,7 @@ import (
 	"os"
 )
 
-// 先从easyDemo做起
-// 此外得考虑如何保证用户加密的方式
+
 func InitLog() {
 	logFile, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
