@@ -22,7 +22,21 @@ type DeliveryPost struct {
 
 type DeliveryComment struct {
 	Content   string `json: "content"`
-	ReplyText string `json: "reply_text"`
+	ReplyText string `json: "reply_text,omitempty"`
+}
+
+type RenderPost struct {
+	Content string `json: "content"`
+	Title   string `json: "title`
+	Pid     int    `json: "pid"`
+	Likes   int    `json: "likes"`
+	Replys  int    `json: "replys"`
+}
+
+type RenderComment struct {
+	Name      string `json: "name"` // 表示回复者的名字
+	Content   string `json: "content"`
+	ReplyText string `json: "reply_text,omitempty"` // 楼中楼
 }
 
 // 注册和登陆采用表单
@@ -130,7 +144,7 @@ func PostNewPost(c *gin.Context) {
 		c.JSON(400, response)
 		return
 	}
-	err2 := PostOne(newpost.Content, "text", newpost.Title, uid.(int))
+	err2 := PostOne(newpost.Content, newpost.Title, newpost.Title, uid.(int))
 	if err2 != nil {
 		response = ErrorResponse(fmt.Sprintf("store post error, please contact the admin"))
 		c.JSON(400, response)
@@ -157,18 +171,106 @@ func PostNewComment(c *gin.Context) {
 		c.JSON(400, response)
 		return
 	}
-	pid2, _ := strconv.Atoi(pid)
+	pid2, err3 := strconv.Atoi(pid)
+	if err3 != nil {
+		response = ErrorResponse(fmt.Sprintf("invalid pid"))
+		c.JSON(400, response)
+		return
+	}
 	err2 := PostComment(comment.Content, comment.ReplyText, uid.(int), pid2)
 	if err2 != nil {
 		response = ErrorResponse(fmt.Sprint("store comment error, please contact the admin"))
+		c.JSON(400, response)
+		return
+	}
+	err4 := UpdatePost(pid2)
+	if err4 != nil {
+		response = ErrorResponse(fmt.Sprintf("update replys wrong, please contact the admin"))
+		c.JSON(400, response)
+		return
 	}
 	response = SuccessResponse(nil)
 	c.JSON(200, response)
 }
 
+// Posts
 func GetPosts(c *gin.Context) {
-	// 就是这个地方, 才是展示给name的真正地方
+	// GetPosts;
+	// 这个东西不需要鉴权;
+	var datas []RenderPost
+	var response UniverseResponse
+	// 获取全部的posts
+	posts, err := GetAllPosts()
+	if err != nil {
+		response = ErrorResponse(fmt.Sprint("get posts error, please contact the admin"))
+		c.JSON(400, response)
+	}
+	for _, v := range *posts {
+		data := RenderPost{
+			Title:   v.Title,
+			Content: v.Text,
+			Pid:     v.Pid,
+			Replys:  v.Replys,
+			Likes:   v.Likes,
+		}
+		datas = append(datas, data)
+	}
+	response = SuccessResponse(datas)
+	c.JSON(200, response)
+}
 
+func GetOnePostInfo(c *gin.Context) {
+	pid := c.Param("pid")
+	pid2, err := strconv.Atoi(pid)
+	var response UniverseResponse
+	if err != nil {
+		response = ErrorResponse(fmt.Sprintf("invalid pid"))
+		c.JSON(400, response)
+	}
+	var post RenderPost
+	p, err2 := GetPostByPid(pid2)
+	if err2 != nil {
+		response = ErrorResponse(fmt.Sprintf("can not find the post"))
+		c.JSON(400, response)
+	}
+	post = RenderPost{
+		Pid:     pid2,
+		Title:   p.Title,
+		Content: p.Text,
+		Likes:   p.Likes,
+		Replys:  p.Replys,
+	}
+	response = SuccessResponse(post)
+	c.JSON(200, response)
+}
+
+func GetOnePostComment(c *gin.Context) {
+	//获取参数
+	pid := c.Param("pid") // 获取pid
+	pid2, err := strconv.Atoi(pid)
+	var response UniverseResponse
+	if err != nil {
+		response = ErrorResponse(fmt.Sprintf("invalid pid"))
+		c.JSON(400, response)
+	}
+	var comments []RenderComment
+	datas, err2 := GetCommentsByPid(pid2)
+	if err2 != nil {
+		response = ErrorResponse(fmt.Sprintf("find data wrong, please contact the admin"))
+		c.JSON(400, response)
+	}
+	for _, data := range *datas {
+		// 根据pid 和 uid生成一个名字
+		name := GenName(data.Pid, data.Uid)
+		comment := RenderComment{
+			Name:      name,
+			Content:   data.Text,
+			ReplyText: data.ReplyText,
+		}
+		comments = append(comments, comment)
+	}
+	response = SuccessResponse(comments)
+	c.JSON(200, response)
 }
 
 func ListenHttp() {
@@ -180,5 +282,9 @@ func ListenHttp() {
 	r1.POST("/post", JWTAuth(), PostNewPost)
 	r1.POST("/post/:pid", JWTAuth(), PostNewComment)
 	r1.GET("/post", JWTAuth(), GetPosts)
+	// 获取的是下面的所有的评论
+	// 关键在于保证每一个人的
+	r1.GET("/post/:pid", JWTAuth(), GetOnePostInfo)
+	r1.GET("/post/:pid/replys", JWTAuth(), GetOnePostComment)
 	r.Run(":8080")
 }

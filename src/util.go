@@ -16,7 +16,6 @@ func HashStr(str string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-
 // func GenToken(uid int) (string, time.Time)
 // func VerifyToken()
 type Claims struct {
@@ -54,4 +53,10 @@ func ParseToken(tokenString string) (*Claims, error) {
 		return claims, nil
 	}
 	return nil, errors.New("Invalid Token")
+}
+
+func GenName(pid, uid int) string {
+	// 考虑一下
+	// 暂且不考虑洞主名字的事情
+	return names[(pid+uid)%20]
 }
