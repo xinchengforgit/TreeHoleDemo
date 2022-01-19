@@ -1,0 +1,6 @@
+{
+    "mysql_resource": "",
+    "redis_resource": "",
+    "mailgun_key": "",
+    "mailgun_domain": ""
+}
